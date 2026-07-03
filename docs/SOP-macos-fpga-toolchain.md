@@ -263,8 +263,8 @@ prjxray 仓库包含两套工具：
 ```bash
 cd $TOOLS
 
-# 1. 安装 fasm Python 包（fasm2frames 的依赖）
-pip3 install fasm
+# 1. 安装 Python 依赖（fasm + prjxray 需要的所有包）
+pip3 install fasm simplejson numpy pyyaml intervaltree ordered-set textx
 
 # 2. 克隆 prjxray 仓库
 git clone --depth=1 https://github.com/f4pga/prjxray.git prjxray
@@ -463,7 +463,37 @@ source tools/env.sh
 2. 如果提示权限不足，可能需要安装 FTDI 驱动或调整系统设置
 3. 在 `系统设置 → 隐私与安全性 → 允许 accessories` 中调整
 
----
+### 坑 9: oss-cad-suite Python 环境污染（高频踩坑！）
+
+**现象**: `source oss-cad-suite/environment` 后运行 `python3 fasm2frames.py` 报
+`ModuleNotFoundError: No module named 'fasm'`。但 `pip3 list | grep fasm` 显示已安装。
+
+**原因**: oss-cad-suite 自带了 Python 3.11（在 `py3bin/`），`source environment` 会把
+PATH、PYTHONPATH、PYTHONHOME 全部指向 oss-cad-suite 的 Python。但 `fasm` 等包是 pip3
+装到系统/miniconda Python 的，oss-cad-suite 的 Python 找不到。
+
+**解决**:
+- 综合（yosys）和烧录（openFPGALoader）需要 oss-cad-suite 环境
+- 比特流生成（fasm2frames）**必须用系统 Python**，不要 source oss-cad-suite
+- 用绝对路径指定 python3：`/Users/xxx/miniconda3/bin/python3`
+
+**避坑**: oss-cad-suite 的环境是"污染的"。只在需要它的工具时才 source，用完尽快切回系统
+环境。在脚本里不要全局 source oss-cad-suite，改为按步骤分段 source。
+
+### 坑 10: prjxray fasm2frames 缺少 Python 依赖
+
+**现象**: `ModuleNotFoundError: No module named 'simplejson'`（然后是 numpy, intervaltree 等）
+
+**原因**: `pip3 install fasm` 只装了 fasm 核心包。prjxray 的 fasm2frames 还需要 simplejson,
+numpy, pyyaml, intervaltree, ordered-set, textx。这些在 prjxray 的 requirements.txt 里，
+但因为安全策略阻断了 `pip3 install -e prjxray`，所以没装上。
+
+**解决**:
+```bash
+pip3 install simplejson numpy pyyaml intervaltree ordered-set textx
+```
+
+**避坑**: 不要在 pip install 外部仓库。手动安装 requirements.txt 里需要的包。
 
 ## 10. 一键脚本
 
@@ -545,7 +575,7 @@ cd "$TOOLS"
 
 # ---- Step 3: prjxray ----
 echo ">>> Step 3/4: prjxray 比特流工具..."
-pip3 install fasm 2>/dev/null || echo "  fasm 安装失败，请手动 pip3 install fasm"
+pip3 install fasm simplejson numpy pyyaml intervaltree ordered-set textx 2>/dev/null || true
 
 if [ ! -d prjxray ]; then
     git clone --depth=1 https://github.com/f4pga/prjxray.git prjxray
