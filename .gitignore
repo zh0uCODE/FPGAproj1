@@ -1,42 +1,43 @@
 # ============================================================
-# FPGA 开源工具链 — .gitignore
-# 策略：只追踪脚本/文档/工程源码，不追踪工具二进制和构建产物
-# 工具链在新机器上按 docs/SOP-macos-fpga-toolchain.md 重建
+# FPGA Open-Source Toolchain — .gitignore
+# Policy: track only scripts/docs/project sources; do not track
+# tool binaries or build artifacts.
+# Rebuild the toolchain on a new machine per docs/SOP-macos-fpga-toolchain.md
 # ============================================================
 
-# --- oss-cad-suite 预编译包 ---
+# --- oss-cad-suite prebuilt package ---
 tools/oss-cad-suite/
 
-# --- nextpnr-xilinx 外部仓库（从 openXC7 克隆，按 SOP 重建）---
+# --- nextpnr-xilinx external repo (cloned from openXC7, rebuild per SOP) ---
 tools/nextpnr-xilinx-src/
 
-# --- prjxray 外部仓库（从 f4pga 克隆，按 SOP 重建）---
+# --- prjxray external repo (cloned from f4pga, rebuild per SOP) ---
 tools/prjxray/
 
-# --- Python 缓存 ---
+# --- Python cache ---
 __pycache__/
 *.pyc
 *.pyo
 
-# --- macOS 垃圾文件 ---
+# --- macOS junk files ---
 .DS_Store
 .AppleDouble
 ._*
 
-# --- 编辑器 ---
+# --- Editors ---
 *.swp
 *.swo
 *~
 .vscode/
 .idea/
 
-# --- 构建中间文件 ---
+# --- Build intermediates ---
 *.o
 *.a
 *.so
 *.dylib
 
-# --- FPGA 工程生成文件 ---
+# --- FPGA project generated files ---
 projects/*/*.json
 projects/*/*.fasm
 projects/*/*.frames

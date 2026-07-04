@@ -8,7 +8,7 @@ CHIPDB="/Users/yizhou/ece/fpga/tools/nextpnr-xilinx-src/xilinx/xc7a35t.bin"
 PRJXRAY_DB="/Users/yizhou/ece/fpga/tools/nextpnr-xilinx-src/xilinx/external/prjxray-db"
 PRJXRAY="/Users/yizhou/ece/fpga/tools/prjxray"
 
-# Python 依赖（不依赖 oss-cad-suite）
+# Python dependencies (does not depend on oss-cad-suite)
 pip3 install simplejson numpy pyyaml intervaltree ordered-set 2>&1 | tail -1
 
 # ---- Synthesis & P&R (need oss-cad-suite) ----
@@ -38,7 +38,7 @@ $PRJXRAY/build/tools/xc7frames2bit \
 ls -lh top.bit
 
 # ---- Flash ----
-echo "=== 烧录 ==="
+echo "=== Flashing ==="
 source $OSS_CAD/environment
 openFPGALoader -b arty top.bit
 echo "DONE"

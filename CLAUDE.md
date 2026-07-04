@@ -1,66 +1,69 @@
-# FPGA 开源工具链 — Digilent Arty A7-35T
+# FPGA Open-Source Toolchain — Digilent Arty A7-35T
 
-## 项目概述
+## Project Overview
 
-在 MacBook (Apple Silicon, macOS 15.5) 上搭建一套**完全免费、开源**的 FPGA 开发工具链，
-目标是让 **Digilent Arty A7-35T**（Xilinx Artix-7 XC7A35T-1CSG324）能够跑通完整的
-数字逻辑设计流程：Verilog → 综合 → 布局布线 → 生成比特流 → 烧录到板子。
+Build a **completely free and open-source** FPGA development toolchain on a MacBook
+(Apple Silicon, macOS 15.5), with the goal of running the full digital logic design flow
+on a **Digilent Arty A7-35T** (Xilinx Artix-7 XC7A35T-1CSG324):
+Verilog → synthesis → place & route → bitstream generation → flash to the board.
 
-所有工具安装在项目目录下，打包即可带走，实现便携化。
+All tools are installed inside the project directory, so the whole thing can be packed
+up and carried anywhere — fully portable.
 
-## 用户偏好
+## User Preferences
 
-- 用户说"打开开发板资料"时，用 `open` 命令在浏览器中打开：
+- When the user says "open the dev board docs", open it in the browser with the `open` command:
   `open docs/arty-a7-reference-manual.mhtml`
-- 全程用中文交流
-- 用户说"烧录/烧到板子"时，按下面的完整开发流程跑一遍，最后用 openFPGALoader 烧录
+- Communicate in Chinese throughout
+- When the user says "flash / burn it to the board", run through the full development
+  flow below, finishing with openFPGALoader to program the board
 
-## "build tools" / "构建工具链" 命令
+## "build tools" / "构建工具链" Command
 
-当用户说 **"build tools"** / **"构建工具链"** / **"安装工具链"** / **"重建工具链"** /
-**"搞环境"**，执行：
+When the user says **"build tools"** / **"构建工具链"** / **"安装工具链"** / **"重建工具链"** /
+**"搞环境"**, run:
 
 ```bash
 bash tools/setup_all.sh
 ```
 
-这个脚本全自动完成：
-1. 安装 Homebrew 编译依赖（cmake, boost, eigen, gflags, abseil, yaml-cpp）
-2. 下载 oss-cad-suite（Yosys + openFPGALoader + 仿真工具）
-3. 克隆并编译 nextpnr-xilinx（布局布线）
-4. 生成芯片数据库 chipdb
-5. 克隆并编译 prjxray（比特流工具）+ 安装 Python 依赖
+This script does everything automatically:
+1. Installs Homebrew build dependencies (cmake, boost, eigen, gflags, abseil, yaml-cpp)
+2. Downloads oss-cad-suite (Yosys + openFPGALoader + simulation tools)
+3. Clones and builds nextpnr-xilinx (place & route)
+4. Generates the chipdb chip database
+5. Clones and builds prjxray (bitstream tools) + installs Python dependencies
 
-首次运行约 2-3 小时。跑完后 `source tools/env.sh` 即可激活全部工具。
+The first run takes about 2-3 hours. Once done, `source tools/env.sh` activates all tools.
 
-**git clone 后的标准流程：**
+**Standard flow after git clone:**
 ```bash
 git clone <repo-url> fpga
 cd fpga
-# 在 Claude Code 中说 "build tools"，或直接:
+# In Claude Code, say "build tools", or directly:
 bash tools/setup_all.sh
 ```
 
 ---
 
-## 完整开发流程（已验证通过 ✅）
+## Full Development Flow (verified working ✅)
 
-> 参考工程：`projects/led-demo/` — LED0 和 LED3 常亮，LED1/LED2 熄灭
+> Reference project: `projects/led-demo/` — LED0 and LED3 on, LED1/LED2 off
 
-### 0. 前提：激活环境
+### 0. Prerequisite: activate the environment
 
 ```bash
 source tools/env.sh
 ```
 
-### 1. 综合 (Yosys)
+### 1. Synthesis (Yosys)
 
 ```bash
-cd projects/你的工程
+cd projects/your-project
 yosys -p "synth_xilinx -flatten -abc9 -arch xc7 -top top; write_json top.json" top.v
 ```
 
-### 2. 布局布线 (nextpnr-xilinx)
+### 2. Place & Route (nextpnr-xilinx)
 
 ```bash
 nextpnr-xilinx \
@@ -71,14 +74,15 @@ nextpnr-xilinx \
     --fasm top.fasm
 ```
 
-### 3. 比特流生成（⚠️ 注意 Python 环境）
+### 3. Bitstream Generation (⚠️ mind the Python environment)
 
-> **关键坑：** oss-cad-suite 自带了 Python 环境，`source environment` 后会覆盖系统 Python。
-> 但 `fasm` 包是 pip 装到系统/miniconda Python 里的，oss-cad-suite 的 Python 找不到。
-> **所以比特流生成步骤不能用 oss-cad-suite 的 Python。**
+> **Key pitfall:** oss-cad-suite bundles its own Python environment; after `source environment`
+> it shadows the system Python. But the `fasm` package was pip-installed into the
+> system/miniconda Python, which the oss-cad-suite Python can't see.
+> **So the bitstream generation step must NOT use the oss-cad-suite Python.**
 
 ```bash
-# 用 miniconda 的 python3（绝对路径），不要 source oss-cad-suite
+# Use miniconda's python3 (absolute path); do not source oss-cad-suite
 export PRJXRAY_DB_DIR="/Users/yizhou/ece/fpga/tools/nextpnr-xilinx-src/xilinx/external/prjxray-db"
 export PYTHONPATH="/Users/yizhou/ece/fpga/tools/prjxray:/Users/yizhou/ece/fpga/tools/prjxray/utils"
 
@@ -96,144 +100,144 @@ python3 /Users/yizhou/ece/fpga/tools/prjxray/utils/fasm2frames.py \
     --output_file top.bit
 ```
 
-### 4. 烧录
+### 4. Flashing
 
 ```bash
-# 需要 oss-cad-suite 环境（openFPGALoader 在里面）
+# Needs the oss-cad-suite environment (openFPGALoader lives there)
 source /Users/yizhou/ece/fpga/tools/oss-cad-suite/environment
 
-# 烧到 SRAM（掉电丢失，调试用）
+# Load to SRAM (lost on power-off, for debugging)
 openFPGALoader -b arty top.bit
 
-# 烧到 Flash（掉电保存）
+# Write to Flash (persists across power cycles)
 openFPGALoader -b arty -f top.bit
 ```
 
-### 一键脚本
+### One-Click Script
 
-`projects/led-demo/build_and_flash.sh` 是验证通过的完整一键脚本，从综合到烧录。
-新工程可以参考它来写。
+`projects/led-demo/build_and_flash.sh` is a verified end-to-end one-click script,
+from synthesis to flashing. New projects can use it as a reference.
 
 ---
 
-## 踩坑记录
+## Pitfall Log
 
-### 坑 9: oss-cad-suite 的 Python 环境冲突（重要！）
+### Pitfall 9: oss-cad-suite Python environment conflict (important!)
 
-**现象**：`source oss-cad-suite/environment` 后运行 `python3 fasm2frames.py` 报
-`ModuleNotFoundError: No module named 'fasm'`，尽管 `pip3 list | grep fasm` 显示已安装。
+**Symptom**: after `source oss-cad-suite/environment`, running `python3 fasm2frames.py` fails with
+`ModuleNotFoundError: No module named 'fasm'`, even though `pip3 list | grep fasm` shows it installed.
 
-**原因**：oss-cad-suite 自带了 Python 3.11（在 `py3bin/`）和相关库，`source environment` 会
-把 PATH 和 PYTHONPATH 指向 oss-cad-suite 的 Python。但 `fasm` 是 `pip3 install` 到
-系统/miniconda Python 的，oss-cad-suite 的 Python 找不到。
+**Cause**: oss-cad-suite bundles Python 3.11 (in `py3bin/`) and related libraries; `source environment`
+points PATH and PYTHONPATH at the oss-cad-suite Python. But `fasm` was `pip3 install`ed into the
+system/miniconda Python, which the oss-cad-suite Python can't find.
 
-**解决**：
-- Step 1-2（综合、布局布线）和 Step 4（烧录）需要 oss-cad-suite 环境
-- Step 3（比特流生成）**必须用系统/miniconda 的 python3**，不要 source oss-cad-suite
-- 比特流生成前先确保 prjxray Python 依赖已装：
+**Fix**:
+- Steps 1-2 (synthesis, P&R) and Step 4 (flashing) need the oss-cad-suite environment
+- Step 3 (bitstream generation) **must use the system/miniconda python3**; do not source oss-cad-suite
+- Before generating the bitstream, make sure the prjxray Python dependencies are installed:
   ```bash
   pip3 install simplejson numpy pyyaml intervaltree ordered-set textx fasm
   ```
 
-**避坑原则**：oss-cad-suite 的环境是"污染的"——它改了 PATH/PYTHONPATH/PYTHONHOME。
-只在需要它的工具（yosys、openFPGALoader）时才 source，用完尽快切回。
+**Rule of thumb**: the oss-cad-suite environment is "polluting" — it changes PATH/PYTHONPATH/PYTHONHOME.
+Only source it when you need its tools (yosys, openFPGALoader), and switch back as soon as you're done.
 
-### 坑 10: prjxray fasm2frames 缺少 Python 依赖
+### Pitfall 10: prjxray fasm2frames missing Python dependencies
 
-**现象**：`ModuleNotFoundError: No module named 'simplejson'`（以及 numpy、intervaltree 等）
+**Symptom**: `ModuleNotFoundError: No module named 'simplejson'` (also numpy, intervaltree, etc.)
 
-**原因**：prjxray 有 `requirements.txt`，但 `pip3 install -e` 被安全策略阻止。
-单独 `pip3 install fasm` 只装了 fasm 核心包，不包括 prjxray 的其他依赖。
+**Cause**: prjxray has a `requirements.txt`, but `pip3 install -e` was blocked by security policy.
+Installing only `pip3 install fasm` gets the fasm core package but not prjxray's other dependencies.
 
-**解决**：
+**Fix**:
 ```bash
 pip3 install simplejson numpy pyyaml intervaltree ordered-set textx
 ```
 
-### 坑 1-8
+### Pitfalls 1-8
 
-见 `docs/SOP-macos-fpga-toolchain.md` 第 9 节。
+See Section 9 of `docs/SOP-macos-fpga-toolchain.md`.
 
 ---
 
-## 硬件信息
+## Hardware Info
 
-- 开发板：Digilent Arty A7-35T
-- FPGA 芯片：Xilinx Artix-7 XC7A35T-1CSG324 (CSG324, 324脚 BGA)
-- 逻辑单元：33,280 LUTs / 41,600 FFs / 90 DSP / 1,800Kb BRAM
-- 时钟：100MHz 晶振 (E3)
-- USB-JTAG：FTDI FT2232HQ（板载）
-- 4 LED (H5, J5, T9, T10) · 4 RGB LED · 4 开关 · 4 按钮 · 4 Pmod · Eth · DDR3
+- Dev board: Digilent Arty A7-35T
+- FPGA chip: Xilinx Artix-7 XC7A35T-1CSG324 (CSG324, 324-pin BGA)
+- Logic: 33,280 LUTs / 41,600 FFs / 90 DSP / 1,800Kb BRAM
+- Clock: 100MHz crystal (E3)
+- USB-JTAG: FTDI FT2232HQ (on-board)
+- 4 LEDs (H5, J5, T9, T10) · 4 RGB LEDs · 4 switches · 4 buttons · 4 Pmods · Eth · DDR3
 
-详细引脚表 → `docs/hardware-reference.md`
+Detailed pinout tables → `docs/hardware-reference.md`
 
-## 工具链架构
+## Toolchain Architecture
 
 ```
-Verilog 源码
+Verilog source
       │
       ▼
-┌──────────┐  Yosys 0.66       综合: synth_xilinx -arch xc7
+┌──────────┐  Yosys 0.66       Synthesis: synth_xilinx -arch xc7
 │  Yosys   │  (oss-cad-suite)  Verilog → JSON
 └────┬─────┘
      │ JSON
      ▼
-┌──────────┐  nextpnr-xilinx   布局布线
-│ nextpnr  │  0.8.2 (源码编译) JSON → FASM
-└────┬─────┘
+┌──────────┐  nextpnr-xilinx   Place & route
+│ nextpnr  │  0.8.2 (built     JSON → FASM
+└────┬─────┘   from source)
      │ FASM
      ▼
-┌──────────┐  fasm2frames      Python (系统 python3)
-│ prjxray  │  xc7frames2bit    C++ (源码编译)
+┌──────────┐  fasm2frames      Python (system python3)
+│ prjxray  │  xc7frames2bit    C++ (built from source)
 └────┬─────┘
      │ .bit
      ▼
-┌──────────┐  openFPGALoader   烧录到板子
-│ 烧录     │  1.1.1            openFPGALoader -b arty
+┌──────────┐  openFPGALoader   Flash to the board
+│ Flash    │  1.1.1            openFPGALoader -b arty
 └──────────┘
 ```
 
-## 目录结构
+## Directory Layout
 
 ```
 fpga/
-├── CLAUDE.md                   ← 项目文档（本文件）
+├── CLAUDE.md                   ← project documentation (this file)
 ├── .gitignore
 ├── hardware/
-│   ├── arty-a7-35t.xdc        ← XDC 约束（时钟+LED 已启用）
-│   └── arty-a7-35t-top.v      ← 顶层 Verilog 模板
+│   ├── arty-a7-35t.xdc        ← XDC constraints (clock + LEDs enabled)
+│   └── arty-a7-35t-top.v      ← top-level Verilog template
 ├── docs/
-│   ├── arty-a7-reference-manual.mhtml  ← 官方参考手册（板子照片+标注）
-│   ├── hardware-reference.md           ← 引脚速查卡
-│   └── SOP-macos-fpga-toolchain.md     ← 工具链创建 SOP
+│   ├── arty-a7-reference-manual.mhtml  ← official reference manual (board photos + annotations)
+│   ├── hardware-reference.md           ← pinout quick-reference card
+│   └── SOP-macos-fpga-toolchain.md     ← toolchain setup SOP
 ├── tools/
-│   ├── env.sh                  ← 环境脚本
-│   ├── setup_all.sh            ← 一键安装
-│   ├── oss-cad-suite/          ← [gitignore] 1.8GB
-│   ├── nextpnr-xilinx-src/     ← [gitignore] 1.3GB
-│   └── prjxray/                ← [gitignore] 219MB
+│   ├── env.sh                  ← environment script
+│   ├── setup_all.sh            ← one-click install
+│   ├── oss-cad-suite/          ← [gitignored] 1.8GB
+│   ├── nextpnr-xilinx-src/     ← [gitignored] 1.3GB
+│   └── prjxray/                ← [gitignored] 219MB
 └── projects/
-    └── led-demo/               ← 验证通过的示例工程
-        ├── top.v               ← LED0+LED3 亮
-        ├── arty.xdc            ← 4 LED 约束
-        └── build_and_flash.sh  ← 一键脚本
+    └── led-demo/               ← verified example project
+        ├── top.v               ← LED0+LED3 on
+        ├── arty.xdc            ← 4-LED constraints
+        └── build_and_flash.sh  ← one-click script
 ```
 
-## 环境激活
+## Environment Activation
 
 ```bash
 source tools/env.sh
 ```
 
-env.sh 会按需加载：
-- oss-cad-suite 环境（yosys, openFPGALoader）
-- nextpnr-xilinx 路径
-- prjxray Python 路径（用系统 python3 而非 oss-cad-suite 的）
-- chipdb 和 prjxray-db 路径
+env.sh loads as needed:
+- oss-cad-suite environment (yosys, openFPGALoader)
+- nextpnr-xilinx path
+- prjxray Python path (uses the system python3, not the oss-cad-suite one)
+- chipdb and prjxray-db paths
 
-## 已验证的示例工程
+## Verified Example Project
 
-`projects/led-demo/` — 最简示例，LED0 和 LED3 常亮：
+`projects/led-demo/` — minimal example, LED0 and LED3 always on:
 
 ```verilog
 module top (output wire [3:0] led);
@@ -244,9 +248,9 @@ module top (output wire [3:0] led);
 endmodule
 ```
 
-一键跑通：`bash projects/led-demo/build_and_flash.sh`
+Run end to end: `bash projects/led-demo/build_and_flash.sh`
 
-## 参考资源
+## References
 
 - https://github.com/YosysHQ/oss-cad-suite-build
 - https://github.com/openXC7/nextpnr-xilinx
@@ -256,4 +260,4 @@ endmodule
 
 ---
 
-*最后更新: 2026-07-03*
+*Last updated: 2026-07-03*

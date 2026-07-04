@@ -2,23 +2,23 @@
 # Arty A7-35T Master XDC Constraints
 # FPGA: XC7A35T-1CSG324C · 100MHz clock · LVCMOS33
 #
-# 约定:
-#   [EN]  已启用，直接可用（含常用信号）
-#   [--]  已注释，需用时取消注释并改端口名
-#   [WARN] 有使用限制，见注释
+# Conventions:
+#   [EN]  Enabled, ready to use (common signals included)
+#   [--]  Commented out; uncomment and rename ports as needed
+#   [WARN] Usage restrictions apply, see comments
 #
-# 来源: Digilent digilent-xdc (GitHub)
+# Source: Digilent digilent-xdc (GitHub)
 # ============================================================
 
 # ============================================================
-# 1. 时钟 — 100MHz
+# 1. Clock — 100MHz
 # ============================================================
 set_property -dict { PACKAGE_PIN E3    IOSTANDARD LVCMOS33 } [get_ports { clk }]; #IO_L12P_T1_MRCC_35 Sch=gclk[100]
 create_clock -add -name clk -period 10.00 -waveform {0 5} [get_ports { clk }];
 
 
 # ============================================================
-# 2. 单色 LED（4 个，高有效）
+# 2. Monochrome LEDs (4, active-high)
 # ============================================================
 set_property -dict { PACKAGE_PIN H5    IOSTANDARD LVCMOS33 } [get_ports { led }];       #IO_L24N_T3_35 Sch=led[4]
 set_property -dict { PACKAGE_PIN J5    IOSTANDARD LVCMOS33 } [get_ports { led[1] }];    #IO_25_35 Sch=led[5]
@@ -27,9 +27,9 @@ set_property -dict { PACKAGE_PIN T10   IOSTANDARD LVCMOS33 } [get_ports { led[3]
 
 
 # ============================================================
-# 3. RGB LED（4 组共 12 位）
+# 3. RGB LEDs (4 groups, 12 bits total)
 # ============================================================
-# [--] 使用前取消注释
+# [--] Uncomment before use
 #set_property -dict { PACKAGE_PIN G6    IOSTANDARD LVCMOS33 } [get_ports { led0_r }]; #IO_L19P_T3_35 Sch=led0_r
 #set_property -dict { PACKAGE_PIN F6    IOSTANDARD LVCMOS33 } [get_ports { led0_g }]; #IO_L19N_T3_VREF_35 Sch=led0_g
 #set_property -dict { PACKAGE_PIN E1    IOSTANDARD LVCMOS33 } [get_ports { led0_b }]; #IO_L18N_T2_35 Sch=led0_b
@@ -45,9 +45,9 @@ set_property -dict { PACKAGE_PIN T10   IOSTANDARD LVCMOS33 } [get_ports { led[3]
 
 
 # ============================================================
-# 4. 拨码开关（4 个，ON = 高）
+# 4. Slide switches (4, ON = high)
 # ============================================================
-# [--] 使用前取消注释
+# [--] Uncomment before use
 #set_property -dict { PACKAGE_PIN A8    IOSTANDARD LVCMOS33 } [get_ports { sw[0] }]; #IO_L12N_T1_MRCC_16 Sch=sw[0]
 #set_property -dict { PACKAGE_PIN C11   IOSTANDARD LVCMOS33 } [get_ports { sw[1] }]; #IO_L13P_T2_MRCC_16 Sch=sw[1]
 #set_property -dict { PACKAGE_PIN C10   IOSTANDARD LVCMOS33 } [get_ports { sw[2] }]; #IO_L13N_T2_MRCC_16 Sch=sw[2]
@@ -55,9 +55,9 @@ set_property -dict { PACKAGE_PIN T10   IOSTANDARD LVCMOS33 } [get_ports { led[3]
 
 
 # ============================================================
-# 5. 按钮（4 个，按下 = 高）
+# 5. Push buttons (4, pressed = high)
 # ============================================================
-# [--] 使用前取消注释
+# [--] Uncomment before use
 #set_property -dict { PACKAGE_PIN D9    IOSTANDARD LVCMOS33 } [get_ports { btn[0] }]; #IO_L6N_T0_VREF_16 Sch=btn[0]
 #set_property -dict { PACKAGE_PIN C9    IOSTANDARD LVCMOS33 } [get_ports { btn[1] }]; #IO_L11P_T1_SRCC_16 Sch=btn[1]
 #set_property -dict { PACKAGE_PIN B9    IOSTANDARD LVCMOS33 } [get_ports { btn[2] }]; #IO_L11N_T1_SRCC_16 Sch=btn[2]
@@ -67,15 +67,15 @@ set_property -dict { PACKAGE_PIN T10   IOSTANDARD LVCMOS33 } [get_ports { led[3]
 # ============================================================
 # 6. USB-UART
 # ============================================================
-# [--] 使用前取消注释
-# 注意：uart_rxd_out = FPGA→PC (FPGA 侧是 TX)
-#       uart_txd_in  = PC→FPGA (FPGA 侧是 RX)
+# [--] Uncomment before use
+# Note: uart_rxd_out = FPGA→PC (TX on the FPGA side)
+#       uart_txd_in  = PC→FPGA (RX on the FPGA side)
 #set_property -dict { PACKAGE_PIN D10   IOSTANDARD LVCMOS33 } [get_ports { uart_rxd_out }]; #IO_L19N_T3_VREF_16 Sch=uart_rxd_out
 #set_property -dict { PACKAGE_PIN A9    IOSTANDARD LVCMOS33 } [get_ports { uart_txd_in  }]; #IO_L14N_T2_SRCC_16 Sch=uart_txd_in
 
 
 # ============================================================
-# 7. Pmod JA — 右上角外侧
+# 7. Pmod JA — top-right, outer
 # ============================================================
 ##set_property -dict { PACKAGE_PIN G13   IOSTANDARD LVCMOS33 } [get_ports { ja[0] }]; #IO_0_15 Sch=ja[1]
 ##set_property -dict { PACKAGE_PIN B11   IOSTANDARD LVCMOS33 } [get_ports { ja[1] }]; #IO_L4P_T0_15 Sch=ja[2]
@@ -88,7 +88,7 @@ set_property -dict { PACKAGE_PIN T10   IOSTANDARD LVCMOS33 } [get_ports { led[3]
 
 
 # ============================================================
-# 8. Pmod JB — 右上角内侧
+# 8. Pmod JB — top-right, inner
 # ============================================================
 ##set_property -dict { PACKAGE_PIN E15   IOSTANDARD LVCMOS33 } [get_ports { jb[0] }]; #IO_L11P_T1_SRCC_15 Sch=jb_p[1]
 ##set_property -dict { PACKAGE_PIN E16   IOSTANDARD LVCMOS33 } [get_ports { jb[1] }]; #IO_L11N_T1_SRCC_15 Sch=jb_n[1]
@@ -101,7 +101,7 @@ set_property -dict { PACKAGE_PIN T10   IOSTANDARD LVCMOS33 } [get_ports { led[3]
 
 
 # ============================================================
-# 9. Pmod JC — 下方左侧
+# 9. Pmod JC — bottom, left
 # ============================================================
 ##set_property -dict { PACKAGE_PIN U12   IOSTANDARD LVCMOS33 } [get_ports { jc[0] }]; #IO_L20P_T3_A08_D24_14 Sch=jc_p[1]
 ##set_property -dict { PACKAGE_PIN V12   IOSTANDARD LVCMOS33 } [get_ports { jc[1] }]; #IO_L20N_T3_A07_D23_14 Sch=jc_n[1]
@@ -114,7 +114,7 @@ set_property -dict { PACKAGE_PIN T10   IOSTANDARD LVCMOS33 } [get_ports { led[3]
 
 
 # ============================================================
-# 10. Pmod JD — 下方右侧
+# 10. Pmod JD — bottom, right
 # ============================================================
 ##set_property -dict { PACKAGE_PIN D4    IOSTANDARD LVCMOS33 } [get_ports { jd[0] }]; #IO_L11N_T1_SRCC_35 Sch=jd[1]
 ##set_property -dict { PACKAGE_PIN D3    IOSTANDARD LVCMOS33 } [get_ports { jd[1] }]; #IO_L12N_T1_MRCC_35 Sch=jd[2]
@@ -129,7 +129,7 @@ set_property -dict { PACKAGE_PIN T10   IOSTANDARD LVCMOS33 } [get_ports { led[3]
 # ============================================================
 # 11. QSPI Flash
 # ============================================================
-# [--] 使用前取消注释（上电自动加载 Flash 内容时需用这些脚）
+# [--] Uncomment before use (these pins are needed for auto-loading Flash contents at power-up)
 ##set_property -dict { PACKAGE_PIN L13   IOSTANDARD LVCMOS33 } [get_ports { qspi_cs }];   #IO_L6P_T0_FCS_B_14 Sch=qspi_cs
 ##set_property -dict { PACKAGE_PIN K17   IOSTANDARD LVCMOS33 } [get_ports { qspi_dq[0] }]; #IO_L1P_T0_D00_MOSI_14 Sch=qspi_dq[0]
 ##set_property -dict { PACKAGE_PIN K18   IOSTANDARD LVCMOS33 } [get_ports { qspi_dq[1] }]; #IO_L1N_T0_D01_DIN_14 Sch=qspi_dq[1]
@@ -138,7 +138,7 @@ set_property -dict { PACKAGE_PIN T10   IOSTANDARD LVCMOS33 } [get_ports { led[3]
 
 
 # ============================================================
-# 12. 以太网 (RMII, 50MHz)
+# 12. Ethernet (RMII, 50MHz)
 # ============================================================
 ##set_property -dict { PACKAGE_PIN G18   IOSTANDARD LVCMOS33 } [get_ports { eth_ref_clk  }]; #IO_L22P_T3_A17_15 Sch=eth_ref_clk
 ##set_property -dict { PACKAGE_PIN C16   IOSTANDARD LVCMOS33 } [get_ports { eth_rstn     }]; #IO_L20P_T3_A20_15 Sch=eth_rstn
@@ -162,9 +162,9 @@ set_property -dict { PACKAGE_PIN T10   IOSTANDARD LVCMOS33 } [get_ports { led[3]
 
 
 # ============================================================
-# 13. ChipKIT / Arduino 接口
+# 13. ChipKIT / Arduino interface
 # ============================================================
-## -- 以下为外侧数字 I/O (ck_io[0:13]) --
+## -- Outer digital I/O (ck_io[0:13]) --
 ##set_property -dict { PACKAGE_PIN V15   IOSTANDARD LVCMOS33 } [get_ports { ck_io[0]  }];
 ##set_property -dict { PACKAGE_PIN U16   IOSTANDARD LVCMOS33 } [get_ports { ck_io[1]  }];
 ##set_property -dict { PACKAGE_PIN P14   IOSTANDARD LVCMOS33 } [get_ports { ck_io[2]  }];
@@ -180,7 +180,7 @@ set_property -dict { PACKAGE_PIN T10   IOSTANDARD LVCMOS33 } [get_ports { led[3]
 ##set_property -dict { PACKAGE_PIN R17   IOSTANDARD LVCMOS33 } [get_ports { ck_io[12] }];
 ##set_property -dict { PACKAGE_PIN P17   IOSTANDARD LVCMOS33 } [get_ports { ck_io[13] }];
 
-## -- 以下为内侧数字 I/O (ck_io[26:41]) --
+## -- Inner digital I/O (ck_io[26:41]) --
 ##set_property -dict { PACKAGE_PIN U11   IOSTANDARD LVCMOS33 } [get_ports { ck_io[26] }];
 ##set_property -dict { PACKAGE_PIN V16   IOSTANDARD LVCMOS33 } [get_ports { ck_io[27] }];
 ##set_property -dict { PACKAGE_PIN M13   IOSTANDARD LVCMOS33 } [get_ports { ck_io[28] }];
@@ -210,10 +210,10 @@ set_property -dict { PACKAGE_PIN T10   IOSTANDARD LVCMOS33 } [get_ports { led[3]
 
 
 # ============================================================
-# 14. 模拟 / 数字复用脚 (ChipKIT A0-A11)
+# 14. Analog / digital shared pins (ChipKIT A0-A11)
 # ============================================================
-# [WARN] 模拟和数字不能同时使用同一脚，二选一
-## -- 数字模式 --
+# [WARN] A pin cannot be used in analog and digital mode at the same time — pick one
+## -- Digital mode --
 ##set_property -dict { PACKAGE_PIN F5    IOSTANDARD LVCMOS33 } [get_ports { ck_a0  }]; # A0
 ##set_property -dict { PACKAGE_PIN D8    IOSTANDARD LVCMOS33 } [get_ports { ck_a1  }]; # A1
 ##set_property -dict { PACKAGE_PIN C7    IOSTANDARD LVCMOS33 } [get_ports { ck_a2  }]; # A2
@@ -226,7 +226,7 @@ set_property -dict { PACKAGE_PIN T10   IOSTANDARD LVCMOS33 } [get_ports { led[3]
 ##set_property -dict { PACKAGE_PIN E5    IOSTANDARD LVCMOS33 } [get_ports { ck_a9  }]; # A9
 ##set_property -dict { PACKAGE_PIN A4    IOSTANDARD LVCMOS33 } [get_ports { ck_a10 }]; # A10
 ##set_property -dict { PACKAGE_PIN A3    IOSTANDARD LVCMOS33 } [get_ports { ck_a11 }]; # A11
-## -- 模拟模式 (XADC) --
+## -- Analog mode (XADC) --
 ##set_property -dict { PACKAGE_PIN C6    IOSTANDARD LVCMOS33 } [get_ports { vaux4_p  }];
 ##set_property -dict { PACKAGE_PIN C5    IOSTANDARD LVCMOS33 } [get_ports { vaux4_n  }];
 ##set_property -dict { PACKAGE_PIN A6    IOSTANDARD LVCMOS33 } [get_ports { vaux5_p  }];

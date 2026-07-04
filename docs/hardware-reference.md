@@ -1,47 +1,47 @@
-# Arty A7-35T 硬件参考卡
+# Arty A7-35T Hardware Reference Card
 
 > Digilent Arty A7-35T (Rev. D/E) · Xilinx Artix-7 XC7A35T-1CSG324C · 33280 LUTs · 100MHz OSC
 
 ---
 
-## 一、板上基础 I/O
+## 1. On-Board Basic I/O
 
-### 系统时钟
+### System Clock
 
-| 信号 | FPGA 引脚 | 频率 | I/O 标准 |
+| Signal | FPGA Pin | Frequency | I/O Standard |
 |------|----------|------|---------|
 | `CLK100MHZ` | **E3** | 100 MHz | LVCMOS33 |
 
-### 按钮（4 个，按下为高）
+### Push Buttons (4, high when pressed)
 
-| 信号 | FPGA 引脚 | 板子丝印 |
+| Signal | FPGA Pin | Board Silkscreen |
 |------|----------|---------|
-| `btn[0]` | **D9** | BTN0（最右） |
+| `btn[0]` | **D9** | BTN0 (rightmost) |
 | `btn[1]` | **C9** | BTN1 |
 | `btn[2]` | **B9** | BTN2 |
-| `btn[3]` | **B8** | BTN3（最左） |
+| `btn[3]` | **B8** | BTN3 (leftmost) |
 
-### 开关（4 个，拨上为高）
+### Switches (4, high when up)
 
-| 信号 | FPGA 引脚 | 板子丝印 |
+| Signal | FPGA Pin | Board Silkscreen |
 |------|----------|---------|
-| `sw[0]` | **A8** | SW0（最右） |
+| `sw[0]` | **A8** | SW0 (rightmost) |
 | `sw[1]` | **C11** | SW1 |
 | `sw[2]` | **C10** | SW2 |
-| `sw[3]` | **A10** | SW3（最左） |
+| `sw[3]` | **A10** | SW3 (leftmost) |
 
-### 单色 LED（4 个，高亮）
+### Monochrome LEDs (4, active-high)
 
-| 信号 | FPGA 引脚 | 颜色 | 丝印 |
+| Signal | FPGA Pin | Color | Silkscreen |
 |------|----------|------|------|
-| `led[0]` | **H5** | 绿 | LD4 |
-| `led[1]` | **J5** | 绿 | LD5 |
-| `led[2]` | **T9** | 绿 | LD6 |
-| `led[3]` | **T10** | 绿 | LD7 |
+| `led[0]` | **H5** | Green | LD4 |
+| `led[1]` | **J5** | Green | LD5 |
+| `led[2]` | **T9** | Green | LD6 |
+| `led[3]` | **T10** | Green | LD7 |
 
-### RGB LED（4 个，共 12 位独立控制）
+### RGB LEDs (4, with 12 independently controlled bits)
 
-| LED 编号 | 红 R | 绿 G | 蓝 B |
+| LED # | Red R | Green G | Blue B |
 |----------|------|------|------|
 | LD0 | G6 | F6 | E1 |
 | LD1 | G3 | J4 | G4 |
@@ -50,22 +50,22 @@
 
 ### USB-UART
 
-| 信号 | FPGA 引脚 | 方向 |
+| Signal | FPGA Pin | Direction |
 |------|----------|------|
-| `uart_rxd_out` | **D10** | FPGA → PC（TX） |
-| `uart_txd_in` | **A9** | PC → FPGA（RX） |
+| `uart_rxd_out` | **D10** | FPGA → PC (TX) |
+| `uart_txd_in` | **A9** | PC → FPGA (RX) |
 
-> ⚠️ 注意命名：`uart_rxd_out` 是 FPGA 端输出（经 FTDI 发往 PC），`uart_txd_in` 是 FPGA 端输入（来自 PC）。
+> ⚠️ Watch the naming: `uart_rxd_out` is an FPGA-side output (sent to the PC via the FTDI chip), `uart_txd_in` is an FPGA-side input (from the PC).
 
 ---
 
-## 二、Pmod 扩展口
+## 2. Pmod Expansion Connectors
 
-> 4 组 Pmod，每组 8 位。间距 2.54mm，兼容标准 Pmod 外设。
+> 4 Pmod headers, 8 bits each. 2.54mm pitch, compatible with standard Pmod peripherals.
 
-### Pmod JA（板子右上角）
+### Pmod JA (top-right of the board)
 
-| 位 | FPGA 引脚 |
+| Bit | FPGA Pin |
 |----|----------|
 | `ja[0]` | G13 |
 | `ja[1]` | B11 |
@@ -76,9 +76,9 @@
 | `ja[6]` | A18 |
 | `ja[7]` | K16 |
 
-### Pmod JB（右上角内侧）
+### Pmod JB (top-right, inner)
 
-| 位 | FPGA 引脚 |
+| Bit | FPGA Pin |
 |----|----------|
 | `jb[0]` | E15 |
 | `jb[1]` | E16 |
@@ -89,9 +89,9 @@
 | `jb[6]` | K15 |
 | `jb[7]` | J15 |
 
-### Pmod JC（板子正下方左侧）
+### Pmod JC (bottom of the board, left)
 
-| 位 | FPGA 引脚 |
+| Bit | FPGA Pin |
 |----|----------|
 | `jc[0]` | U12 |
 | `jc[1]` | V12 |
@@ -102,9 +102,9 @@
 | `jc[6]` | T13 |
 | `jc[7]` | U13 |
 
-### Pmod JD（板子正下方右侧）
+### Pmod JD (bottom of the board, right)
 
-| 位 | FPGA 引脚 |
+| Bit | FPGA Pin |
 |----|----------|
 | `jd[0]` | D4 |
 | `jd[1]` | D3 |
@@ -117,11 +117,11 @@
 
 ---
 
-## 三、Arduino / ChipKIT 接口
+## 3. Arduino / ChipKIT Interface
 
 ### SPI
 
-| 信号 | FPGA 引脚 |
+| Signal | FPGA Pin |
 |------|----------|
 | `ck_miso` | G1 |
 | `ck_mosi` | H1 |
@@ -130,21 +130,21 @@
 
 ### I2C
 
-| 信号 | FPGA 引脚 |
+| Signal | FPGA Pin |
 |------|----------|
 | `ck_scl` | L18 |
 | `ck_sda` | M18 |
 
-### 数字 I/O（共 30 位）
+### Digital I/O (30 bits total)
 
-| 组 | 信号范围 | 引脚 |
+| Group | Signal Range | Pins |
 |----|---------|------|
-| 外侧数字 | `ck_io[0]` ~ `ck_io[13]` | V15, U16, P14, T11, R12, T14, T15, T16, N15, M16, V17, U18, R17, P17 |
-| 内侧数字 | `ck_io[26]` ~ `ck_io[41]` | U11, V16, M13, R10, R11, R13, R15, P15, R16, N16, N14, U17, T18, R18, P18, N17 |
+| Outer digital | `ck_io[0]` ~ `ck_io[13]` | V15, U16, P14, T11, R12, T14, T15, T16, N15, M16, V17, U18, R17, P17 |
+| Inner digital | `ck_io[26]` ~ `ck_io[41]` | U11, V16, M13, R10, R11, R13, R15, P15, R16, N16, N14, U17, T18, R18, P18, N17 |
 
-### 模拟 / 数字复用
+### Analog / Digital Shared Pins
 
-| ChipKit 脚 | 数字模式 | 模拟模式 |
+| ChipKit Pin | Digital Mode | Analog Mode |
 |-----------|---------|---------|
 | A0 | `ck_a0` (F5) | `vaux4` (C6/C5) |
 | A1 | `ck_a1` (D8) | `vaux5` (A6/A5) |
@@ -159,42 +159,42 @@
 | A10 | `ck_a10` (A4) | `vaux14` (A4/A3) |
 | A11 | `ck_a11` (A3) | `vaux14` (A3/A4) |
 
-> ⚠️ 模拟和数字模式**不能同时使用**同一脚。
+> ⚠️ Analog and digital modes **cannot be used at the same time** on the same pin.
 
-### 其他 ChipKIT 信号
+### Other ChipKIT Signals
 
-| 信号 | FPGA 引脚 | 功能 |
+| Signal | FPGA Pin | Function |
 |------|----------|------|
-| `ck_ioa` | M17 | IO 复用 |
-| `ck_rst` | C2 | 复位 |
+| `ck_ioa` | M17 | IO multiplexed |
+| `ck_rst` | C2 | Reset |
 
 ---
 
-## 四、板载外设
+## 4. On-Board Peripherals
 
-### 以太网 (SMSC LAN8720A PHY, RMII)
+### Ethernet (SMSC LAN8720A PHY, RMII)
 
-| 信号 | FPGA 引脚 | 方向 |
+| Signal | FPGA Pin | Direction |
 |------|----------|------|
-| `eth_ref_clk` | G18 | 输入 (50MHz) |
-| `eth_rstn` | C16 | 输出 (复位, 低有效) |
-| `eth_mdc` | F16 | 输出 (MDIO 时钟) |
-| `eth_mdio` | K13 | 双向 (MDIO 数据) |
-| `eth_rx_clk` | F15 | 输入 |
-| `eth_rx_dv` | G16 | 输入 (数据有效) |
-| `eth_rxd[0:3]` | D18, E17, E18, G17 | 输入 |
-| `eth_rxerr` | C17 | 输入 |
-| `eth_tx_clk` | H16 | 输入 |
-| `eth_tx_en` | H15 | 输出 |
-| `eth_txd[0:3]` | H14, J14, J13, H17 | 输出 |
-| `eth_col` | D17 | 输入 |
-| `eth_crs` | G14 | 输入 |
+| `eth_ref_clk` | G18 | Input (50MHz) |
+| `eth_rstn` | C16 | Output (reset, active-low) |
+| `eth_mdc` | F16 | Output (MDIO clock) |
+| `eth_mdio` | K13 | Bidirectional (MDIO data) |
+| `eth_rx_clk` | F15 | Input |
+| `eth_rx_dv` | G16 | Input (data valid) |
+| `eth_rxd[0:3]` | D18, E17, E18, G17 | Input |
+| `eth_rxerr` | C17 | Input |
+| `eth_tx_clk` | H16 | Input |
+| `eth_tx_en` | H15 | Output |
+| `eth_txd[0:3]` | H14, J14, J13, H17 | Output |
+| `eth_col` | D17 | Input |
+| `eth_crs` | G14 | Input |
 
 ### QSPI Flash (Spansion S25FL128S, 16MB)
 
-| 信号 | FPGA 引脚 | 功能 |
+| Signal | FPGA Pin | Function |
 |------|----------|------|
-| `qspi_cs` | L13 | 片选 |
+| `qspi_cs` | L13 | Chip select |
 | `qspi_dq[0]` | K17 | IO0 (MOSI) |
 | `qspi_dq[1]` | K18 | IO1 (MISO) |
 | `qspi_dq[2]` | L14 | IO2 (WP#) |
@@ -202,46 +202,46 @@
 
 ### DDR3 (Micron MT41K128M16JT-125, 256MB)
 
-> DDR3 引脚较多，详见专门的 DDR3 约束文件。MIG IP 核会自动生成。
+> DDR3 has many pins; see the dedicated DDR3 constraint file. The MIG IP core generates them automatically.
 
 ---
 
-## 五、FPGA 芯片摘要
+## 5. FPGA Chip Summary
 
-| 参数 | 值 |
+| Parameter | Value |
 |------|-----|
-| 型号 | XC7A35T-1CSG324C |
-| 封装 | CSG324 (324脚 BGA, 0.8mm) |
-| 逻辑单元 | 33,280 LUTs |
-| 触发器 | 41,600 FFs |
-| Block RAM | 1,800 Kb (50个 36Kb 块) |
-| DSP48E1 | 90 个 |
-| PLL/MMCM | 5 个 MMCM + 5 个 PLL |
-| 最大用户 I/O | 210 |
-| 速度等级 | -1 |
+| Part number | XC7A35T-1CSG324C |
+| Package | CSG324 (324-pin BGA, 0.8mm) |
+| Logic cells | 33,280 LUTs |
+| Flip-flops | 41,600 FFs |
+| Block RAM | 1,800 Kb (50 × 36Kb blocks) |
+| DSP48E1 | 90 |
+| PLL/MMCM | 5 MMCM + 5 PLL |
+| Max user I/O | 210 |
+| Speed grade | -1 |
 
 ---
 
-## 六、硬件配置
+## 6. Hardware Configuration
 
-| 配置项 | 设置 |
+| Item | Setting |
 |--------|------|
-| 启动模式 (JP1) | JTAG + QSPI |
-| 时钟源 | 100MHz 晶振 (ASE-100.000MHZ-LR-T) |
-| 电源输入 | USB (J10) 或 7-15V DC (J13) |
-| 配置方式 | JTAG (板载 FT2232H) |
-| 程序存储 | QSPI Flash (16MB), 上电自动加载 |
+| Boot mode (JP1) | JTAG + QSPI |
+| Clock source | 100MHz crystal (ASE-100.000MHZ-LR-T) |
+| Power input | USB (J10) or 7-15V DC (J13) |
+| Configuration | JTAG (on-board FT2232H) |
+| Program storage | QSPI Flash (16MB), auto-load at power-up |
 
 ---
 
-## 七、跳线设置
+## 7. Jumper Settings
 
-| 跳线 | 默认 | 功能 |
+| Jumper | Default | Function |
 |------|------|------|
-| JP1 (MODE) | JTAG | 配置模式选择 |
-| JP2 | 闭合 | VCCIO3 选择 3.3V |
-| JP3/JP4/JP5 | — | XADC 参考电压 / 模拟输入 |
+| JP1 (MODE) | JTAG | Configuration mode select |
+| JP2 | Closed | VCCIO3 set to 3.3V |
+| JP3/JP4/JP5 | — | XADC reference voltage / analog input |
 
 ---
 
-*参考: Digilent Arty A7 Reference Manual · GitHub: digilent-xdc · 整理于 2026-07-03*
+*References: Digilent Arty A7 Reference Manual · GitHub: digilent-xdc · Compiled on 2026-07-03*
