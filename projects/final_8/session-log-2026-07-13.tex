@@ -1,0 +1,146 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  frame=single,
+  breaklines=true,
+  columns=fullflexible,
+  language=Verilog
+}
+
+\title{FPGA Session Log --- \texttt{final\_8}: 4-to-16 Decoder\\
+\large Digilent Arty A7-35T \,\textperiodcentered\, Open-Source Toolchain}
+\author{Lucas Zhou}
+\date{July 13, 2026}
+
+\begin{document}
+\maketitle
+
+\section{Session Goal}
+Compile the hand-written \texttt{top.v} (a 4-to-16 decoder mapping two 2-bit
+inputs $\{A2,A1\}$ and $\{B2,B1\}$ to a seven-segment pattern
+\texttt{seg[6:0]}), create a testbench, and establish the simulation flow.
+The Pmod SSD (seven-segment display) hardware is on order.
+
+\section{Compilation Result}
+Synthesis was attempted with Yosys 0.66 (oss-cad-suite):
+\begin{lstlisting}[language=bash]
+yosys -p "synth_xilinx -flatten -abc9 -arch xc7 -top top; \
+          write_json top.json" top.v
+\end{lstlisting}
+It failed at the first parse error:
+\begin{lstlisting}[language={}]
+top.v:2: ERROR: syntax error, unexpected TOK_ID,
+         expecting ')' or ',' or '='
+\end{lstlisting}
+
+Three recurring syntax issues were identified (fixes to be applied by the
+author):
+\begin{enumerate}
+  \item \textbf{Port list commas} (line 2): ports must be comma-separated,
+        including between the \texttt{input} and \texttt{output}
+        declarations, e.g.\ \texttt{input wire A2, A1, B2, B1,}.
+  \item \textbf{Case-item colons} (lines 9--25): each case item requires a
+        colon, e.g.\ \texttt{4'b0000: seg = ...} (likewise
+        \texttt{default:}).
+  \item \textbf{Statement semicolons}: every assignment
+        \texttt{seg = 7'b...} must end with \texttt{;}.
+\end{enumerate}
+The decoder logic itself (the 2-bit $\times$ 2-bit product table) is expected
+to compile cleanly once these are corrected.
+
+\section{Testbench}
+\texttt{tb\_top.v} was created. It sweeps all 16 combinations of
+$\{A2,A1,B2,B1\}$, prints the resulting \texttt{seg[6:0]} pattern for each,
+and dumps \texttt{tb\_top.vcd} for waveform viewing. It is deliberately
+\emph{not} self-checking: the printed patterns are to be compared by hand
+against the case table in \texttt{top.v}.
+
+\section{Simulation Flow}
+From \texttt{projects/final\_8/}:
+\begin{lstlisting}[language=bash]
+source /Users/lucaszhou/15A/FPGAproj1/tools/oss-cad-suite/environment
+iverilog -g2005 -o tb_top.vvp tb_top.v top.v   # compile
+vvp tb_top.vvp                                 # run, prints 16 cases
+gtkwave tb_top.vcd                             # optional waveforms
+\end{lstlisting}
+
+\section{Follow-up Session (same day): XDC Rewrite}
+
+The author fixed the case-item colons and statement semicolons in
+\texttt{top.v}; one syntax issue remains (port-list commas, line~2).
+\texttt{arty.xdc} was then rewritten to match the current ports:
+
+\begin{itemize}
+  \item \textbf{Inputs}: \texttt{A2/A1/B2/B1} on the slide switches,
+        keeping the earlier assignment A2=SW3 (A10), A1=SW2 (C10),
+        B2=SW1 (C11), B1=SW0 (A8).
+  \item \textbf{Outputs}: \texttt{seg[6:0]} on Pmod connector \textbf{JA}
+        (top-right of the board), where the Pmod SSD's segment inputs land:
+        \texttt{seg[0]}$\to$JA1 (G13, signal AA) through
+        \texttt{seg[6]}$\to$JA9 (A18, signal AG); i.e.\ \texttt{seg[N]}
+        drives SSD segment $N{+}1$. If a segment lights in the wrong
+        position on real hardware, permute the XDC pin assignments rather
+        than the \texttt{top.v} case table.
+  \item \textbf{Digit select}: the Pmod SSD is a two-digit display; JA
+        pin~10 (K16, signal C) selects the lit digit. The constraint is
+        present but commented out because \texttt{top.v} has no such port
+        yet.
+\end{itemize}
+
+\textbf{Verification}: a scratch copy of \texttt{top.v} (with only the
+line-2 commas added; the author's file was not modified) was run through
+Yosys and nextpnr-xilinx with the new XDC --- clean synthesis, all 11
+ports constrained to their pads, and a FASM file generated. The real
+build should therefore pass once the author applies the comma fix.
+
+\subsection*{Adding the digit-select port (to be applied by the author)}
+\begin{lstlisting}
+module top (
+  input wire A2, A1, B2, B1, //bits
+  output reg [6:0] seg, //from 1 to 7
+  output wire C //digit select for Pmod SSD
+);
+...
+assign C = 1'b1; // outside the always block; flip to 1'b0 if the wrong digit lights
+\end{lstlisting}
+After adding the port, uncomment the K16 line at the bottom of
+\texttt{arty.xdc}.
+
+\section{Open Items}
+\begin{itemize}
+  \item \textbf{Fix \texttt{top.v} port commas} (author) --- line 2:
+        \texttt{input wire A2, A1, B2, B1,}.
+  \item \textbf{Add digit-select port \texttt{C}} (author) --- snippet
+        above; then uncomment the K16 constraint in \texttt{arty.xdc}.
+  \item \textbf{Confirm on hardware once the Pmod SSD arrives} ---
+        segment ordering (seg[N] $\to$ segment $N{+}1$ assumed) and
+        digit-select polarity.
+  \item \textbf{Fix \texttt{tools/env.sh} under zsh} --- its
+        \texttt{BASH\_SOURCE} fallback points at a stale path from an
+        old machine; as a workaround the oss-cad-suite environment was
+        sourced directly.
+\end{itemize}
+
+\section{Files in \texttt{projects/final\_8/}}
+\begin{tabular}{@{}lll@{}}
+\toprule
+File & Status & Notes \\
+\midrule
+\texttt{top.v} & one syntax fix left & written by author; line-2 commas pending \\
+\texttt{tb\_top.v} & new this session & 16-case sweep + VCD dump \\
+\texttt{arty.xdc} & rewritten & Pmod SSD on JA; verified through P\&R \\
+\texttt{build\_and\_flash.sh} & existing & end-to-end build script \\
+\bottomrule
+\end{tabular}
+
+\end{document}

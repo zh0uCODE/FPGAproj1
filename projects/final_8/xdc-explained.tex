@@ -1,0 +1,369 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  frame=single,
+  breaklines=true,
+  columns=fullflexible,
+  numbers=left,
+  numberstyle=\tiny\color{gray}
+}
+
+\title{The \texttt{arty.xdc} File, Explained Line by Line\\
+\large \texttt{final\_8} project \,\textperiodcentered\, Digilent Arty A7-35T
+\,\textperiodcentered\, includes the July 16--17 debug notes}
+\author{Lucas Zhou}
+\date{July 17, 2026}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+%=====================================================================
+\section{What Is an XDC File in the First Place?}
+
+Your \texttt{top.v} describes \emph{logic}: ``there are inputs called
+\texttt{A2, A1, B2, B1}, an output bus called \texttt{seg}, and here is the
+truth table connecting them.'' Notice that nothing in the Verilog says
+\emph{where} those signals physically live. The FPGA chip has 324 metal
+balls on its underside, and the Arty board routes some of them to switches,
+some to LEDs, some to the Pmod connectors on the edge.
+
+The \textbf{XDC file} (\emph{Xilinx Design Constraints}) is the missing
+link. It tells the place-and-route tool (\texttt{nextpnr-xilinx} in our
+flow):
+
+\begin{quote}
+``The Verilog port named \texttt{A2} must come out on the physical pin
+named \texttt{A10}, using 3.3\,V signaling.''
+\end{quote}
+
+That is essentially \emph{all} our XDC does --- eleven sentences of that
+form, one per port. XDC files are written in the \textbf{Tcl} scripting
+language (pronounced ``tickle''), which is why the syntax looks nothing
+like Verilog. You never write algorithms in it here; every line is the
+same one command with different arguments.
+
+\textbf{Key mental model:} the XDC is a \emph{patch cable list}. Changing
+it never changes your logic --- it only changes which physical pin each
+logical wire pops out of. That is why every hardware bug in this project
+was fixed in the XDC while your \texttt{top.v} stayed untouched.
+
+%=====================================================================
+\section{Anatomy of One Constraint Line}
+
+Every functional line in the file is this single pattern:
+
+\begin{lstlisting}[numbers=none]
+set_property -dict { PACKAGE_PIN A10  IOSTANDARD LVCMOS33 } [get_ports { A2 }];
+\end{lstlisting}
+
+Reading it piece by piece:
+
+\begin{description}
+  \item[\texttt{set\_property}] The Tcl command. It means ``attach the
+    following properties to the following object.'' Same command on every
+    line.
+  \item[\texttt{-dict \{ ... \}}] ``Here comes a \emph{dictionary} of
+    property--value pairs.'' A dictionary is just an alternating list:
+    \emph{name value name value}. Ours contains two pairs:
+    \begin{itemize}
+      \item \texttt{PACKAGE\_PIN A10} --- property \texttt{PACKAGE\_PIN}
+        gets value \texttt{A10}. This is the physical ball on the chip
+        package. Pin names like \texttt{A10}, \texttt{G13}, \texttt{E15}
+        are grid coordinates on the 324-ball package (row letter + column
+        number), \emph{not} related to your signal names. It is pure
+        coincidence that a switch pin is called \texttt{A10} and your port
+        is called \texttt{A2}.
+      \item \texttt{IOSTANDARD LVCMOS33} --- property \texttt{IOSTANDARD}
+        gets value \texttt{LVCMOS33}, meaning ``Low-Voltage CMOS,
+        3.3\,V.'' FPGA pins can speak many electrical dialects (1.8\,V,
+        2.5\,V, differential pairs, \dots). Everything on the Arty's
+        switches and Pmod connectors is wired for 3.3\,V, so every line
+        says \texttt{LVCMOS33}. Omitting it is an error in Vivado and bad
+        practice everywhere.
+    \end{itemize}
+  \item[{\texttt{[get\_ports \{ A2 \}]}}] In Tcl, square brackets mean
+    ``run this inner command first and substitute its result'' --- like
+    $f(g(x))$ in math. \texttt{get\_ports} looks up a port \emph{by the
+    name it has in the top-level Verilog module}. So this fetches your
+    \texttt{input wire A2} and hands it to \texttt{set\_property}. The
+    name must match the Verilog port exactly; for a bus you name one bit
+    at a time: \texttt{seg[0]}, \texttt{seg[1]}, \dots
+  \item[\texttt{;}] End of statement. (In Tcl a newline also ends a
+    statement, so the semicolon is optional --- it is kept for clarity.)
+  \item[\texttt{\#\# comment}] Anything after \texttt{\#} is a comment.
+    Double \texttt{\#\#} is just a style convention, same as one.
+\end{description}
+
+So the whole line reads, in English: \emph{``Find the top-level port
+named \texttt{A2}, solder it (logically) to package ball \texttt{A10}, and
+drive it with 3.3\,V CMOS levels.''}
+
+%=====================================================================
+\section{The Current, Working XDC --- Every Line}
+
+\begin{lstlisting}
+## final_8: 4 switches in, seg[6:0] out to Pmod SSD straddling JA and JB
+##
+## The Pmod SSD has two 6-pin headers: J1 (AA-AD, GND, VCC) plugs into the
+## TOP ROW of JA, and J2 (AE, AF, AG, CAT, GND, VCC) plugs into the TOP ROW
+## of JB. So four of the signals live on JB pins 1-4, not JA's bottom row.
+##
+## The display glyphs are mounted 180 deg rotated as viewed on the Arty
+## (decimal points sit top-left), so each module signal lights the segment
+## diametrically opposite its name: AA = viewed bottom, AD = viewed top,
+## AB = viewed lower-left, etc. The assignments below bake in both the
+## JA/JB split and that rotation.
+##
+## top.v numbers segments 1-7 bottom-to-top (seg[0..6] = viewed D,C,E,G,B,F,A).
+## If a segment still lights in the wrong position, permute these pin
+## assignments rather than the top.v table.
+
+## Switches (A2=SW3, A1=SW2, B2=SW1, B1=SW0)
+set_property -dict { PACKAGE_PIN A10   IOSTANDARD LVCMOS33 } [get_ports { A2 }];
+set_property -dict { PACKAGE_PIN C10   IOSTANDARD LVCMOS33 } [get_ports { A1 }];
+set_property -dict { PACKAGE_PIN C11   IOSTANDARD LVCMOS33 } [get_ports { B2 }];
+set_property -dict { PACKAGE_PIN A8    IOSTANDARD LVCMOS33 } [get_ports { B1 }];
+
+## Seven-segment outputs (viewed position -> module signal -> FPGA pin)
+set_property -dict { PACKAGE_PIN G13   IOSTANDARD LVCMOS33 } [get_ports { seg[0] }];  # viewed D (bottom)      -> AA -> JA1
+set_property -dict { PACKAGE_PIN E16   IOSTANDARD LVCMOS33 } [get_ports { seg[1] }];  # viewed C (lower-right) -> AF -> JB2
+set_property -dict { PACKAGE_PIN B11   IOSTANDARD LVCMOS33 } [get_ports { seg[2] }];  # viewed E (lower-left)  -> AB -> JA2
+set_property -dict { PACKAGE_PIN D15   IOSTANDARD LVCMOS33 } [get_ports { seg[3] }];  # viewed G (middle)      -> AG -> JB3
+set_property -dict { PACKAGE_PIN E15   IOSTANDARD LVCMOS33 } [get_ports { seg[4] }];  # viewed B (upper-right) -> AE -> JB1
+set_property -dict { PACKAGE_PIN A11   IOSTANDARD LVCMOS33 } [get_ports { seg[5] }];  # viewed F (upper-left)  -> AC -> JA3
+set_property -dict { PACKAGE_PIN D12   IOSTANDARD LVCMOS33 } [get_ports { seg[6] }];  # viewed A (top)         -> AD -> JA4
+
+## Pmod SSD digit select (CAT on the module's J2 pin 4 = JB4, NOT JA10):
+## picks which of the two digits is lit. top.v drives it constant.
+set_property -dict { PACKAGE_PIN C15   IOSTANDARD LVCMOS33 } [get_ports { C }];
+\end{lstlisting}
+
+\subsection{Lines 1--16: the header comments}
+Pure documentation --- the tool ignores them. They record the two hardware
+facts discovered on July 16 (Section~\ref{sec:whyoldfailed}) so the next
+reader does not rediscover them the hard way.
+
+\subsection{Lines 18--22: the four switch inputs}
+One line per input port. Each maps a Verilog input to one of the four
+slide switches at the bottom edge of the board:
+
+\begin{center}
+\begin{tabular}{@{}llll@{}}
+\toprule
+Line & Verilog port & Package pin & Board part \\
+\midrule
+19 & \texttt{A2} (high bit of $A$) & \texttt{A10} & switch SW3 \\
+20 & \texttt{A1} (low bit of $A$)  & \texttt{C10} & switch SW2 \\
+21 & \texttt{B2} (high bit of $B$) & \texttt{C11} & switch SW1 \\
+22 & \texttt{B1} (low bit of $B$)  & \texttt{A8}  & switch SW0 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Where do pins like \texttt{A10} come from? From the board schematic ---
+Digilent publishes a ``master XDC'' listing which package pin every
+switch, LED and connector wire uses. Our project keeps a condensed copy in
+\texttt{docs/hardware-reference.md}. These four lines have been correct
+from day one and never changed.
+
+\subsection{Lines 24--32: the seven segment outputs}
+One line per bit of \texttt{output reg [6:0] seg}. Three name spaces
+meet on each line, and the comments spell out all three:
+
+\begin{enumerate}
+  \item \textbf{Your numbering} (\texttt{seg[0]}..\texttt{seg[6]}): the
+    problem's ``segment 1 to 7,'' which counts the segments
+    \emph{bottom-to-top}: bottom bar, lower-right, lower-left, middle,
+    upper-right, upper-left, top. This ordering was reverse-engineered
+    from your own case table (e.g.\ your pattern for ``1'' sets exactly
+    bits 1 and 4 $\Rightarrow$ those must be the two right-hand verticals).
+  \item \textbf{Module signal names} (\texttt{AA}..\texttt{AG}): what the
+    Pmod SSD's silkscreen calls its seven inputs.
+  \item \textbf{FPGA package pins} (\texttt{G13}, \texttt{E16}, \dots):
+    where the Arty routes each Pmod connector pin.
+\end{enumerate}
+
+Line by line:
+\begin{center}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Line & Port & Meaning in \texttt{top.v} & SSD signal & Pin (connector) \\
+\midrule
+25 & \texttt{seg[0]} & segment 1 = bottom bar    & \texttt{AA} & \texttt{G13} (JA pin 1) \\
+26 & \texttt{seg[1]} & segment 2 = lower-right   & \texttt{AF} & \texttt{E16} (JB pin 2) \\
+27 & \texttt{seg[2]} & segment 3 = lower-left    & \texttt{AB} & \texttt{B11} (JA pin 2) \\
+28 & \texttt{seg[3]} & segment 4 = middle bar    & \texttt{AG} & \texttt{D15} (JB pin 3) \\
+29 & \texttt{seg[4]} & segment 5 = upper-right   & \texttt{AE} & \texttt{E15} (JB pin 1) \\
+30 & \texttt{seg[5]} & segment 6 = upper-left    & \texttt{AC} & \texttt{A11} (JA pin 3) \\
+31 & \texttt{seg[6]} & segment 7 = top bar       & \texttt{AD} & \texttt{D12} (JA pin 4) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Why the scrambled-looking middle column? Two physical quirks, both
+explained in Section~\ref{sec:whyoldfailed}: the module spans \emph{two}
+connectors (JA and JB), and its glyphs are mounted upside down, so signal
+\texttt{AA} lights the \emph{bottom} segment as you view it, \texttt{AD}
+the top, and so on.
+
+\subsection{Lines 34--36: the digit select}
+The Pmod SSD contains \emph{two} digits sharing the seven segment wires.
+The \texttt{CAT} input chooses which digit is actually lit (in normal use
+you would toggle it fast to show two different numbers; we hold it
+constant from \texttt{assign C = 1'b1} in \texttt{top.v}, so one digit is
+always on). It lives on JB pin 4 = package pin \texttt{C15}.
+
+%=====================================================================
+\section{The Old Versions, and Why Each Failed}
+\label{sec:whyoldfailed}
+
+The XDC went through three versions. The Verilog logic was correct the
+whole time --- the July 13 simulation sweep of all 16 inputs matched the
+case table exactly, and it still does. Every failure below is purely
+about \emph{which physical pin each signal came out of}.
+
+\subsection{Version 1 (July 13): straight-through guess}
+
+\begin{lstlisting}
+## Seven-segment outputs on Pmod JA
+set_property -dict { PACKAGE_PIN G13  IOSTANDARD LVCMOS33 } [get_ports { seg[0] }];  # JA1 -> AA
+set_property -dict { PACKAGE_PIN B11  IOSTANDARD LVCMOS33 } [get_ports { seg[1] }];  # JA2 -> AB
+set_property -dict { PACKAGE_PIN A11  IOSTANDARD LVCMOS33 } [get_ports { seg[2] }];  # JA3 -> AC
+set_property -dict { PACKAGE_PIN D12  IOSTANDARD LVCMOS33 } [get_ports { seg[3] }];  # JA4 -> AD
+set_property -dict { PACKAGE_PIN D13  IOSTANDARD LVCMOS33 } [get_ports { seg[4] }];  # JA7 -> AE
+set_property -dict { PACKAGE_PIN B18  IOSTANDARD LVCMOS33 } [get_ports { seg[5] }];  # JA8 -> AF
+set_property -dict { PACKAGE_PIN A18  IOSTANDARD LVCMOS33 } [get_ports { seg[6] }];  # JA9 -> AG
+set_property -dict { PACKAGE_PIN K16  IOSTANDARD LVCMOS33 } [get_ports { C }];       # JA10
+\end{lstlisting}
+
+This assumed (a) \texttt{seg[N]} simply means SSD signal number $N{+}1$
+in alphabetical order \texttt{AA}$\to$\texttt{AG}, and (b) the whole
+module plugs into connector JA alone, using both its rows.
+
+\textbf{Symptom on hardware:} garbage shapes --- a ``7''-looking glyph,
+disconnected fragments. \textbf{Wrong because} your \texttt{top.v}
+numbers segments geometrically (bottom-to-top), not alphabetically, so
+each lit segment landed in an unrelated position.
+
+\subsection{Version 2 (July 17, first fix): permuted, still JA-only}
+
+\begin{lstlisting}
+set_property -dict { PACKAGE_PIN D12  IOSTANDARD LVCMOS33 } [get_ports { seg[0] }];  # JA4 -> AD
+set_property -dict { PACKAGE_PIN A11  IOSTANDARD LVCMOS33 } [get_ports { seg[1] }];  # JA3 -> AC
+set_property -dict { PACKAGE_PIN D13  IOSTANDARD LVCMOS33 } [get_ports { seg[2] }];  # JA7 -> AE
+set_property -dict { PACKAGE_PIN A18  IOSTANDARD LVCMOS33 } [get_ports { seg[3] }];  # JA9 -> AG
+set_property -dict { PACKAGE_PIN B11  IOSTANDARD LVCMOS33 } [get_ports { seg[4] }];  # JA2 -> AB
+set_property -dict { PACKAGE_PIN B18  IOSTANDARD LVCMOS33 } [get_ports { seg[5] }];  # JA8 -> AF
+set_property -dict { PACKAGE_PIN G13  IOSTANDARD LVCMOS33 } [get_ports { seg[6] }];  # JA1 -> AA
+\end{lstlisting}
+
+This version fixed the \emph{numbering} mismatch: decoding the case table
+showed \texttt{seg[0..6]} must mean segments D, C, E, G, B, F, A (the
+bottom-to-top order). Assuming the SSD's names matched the standard
+seven-segment letters and everything sat on JA, this permutation should
+have produced correct digits.
+
+\textbf{Symptom on hardware:} still partial digits --- for input
+\texttt{1011} ($2\times3$), only three segments of the expected six lit
+up. \textbf{Wrong because} both physical assumptions from Version 1 were
+still baked in, and both turned out to be false.
+
+\subsection{What the photo revealed (the two real bugs)}
+
+Photo \texttt{IMG\_8616} (July 17), input \texttt{1011}, expected ``6'':
+
+\begin{enumerate}
+  \item \textbf{The module straddles two connectors.} The Pmod SSD has
+    two separate 6-pin headers: J1 (\texttt{AA AB AC AD GND VCC}) in the
+    top row of JA, and J2 (\texttt{AE AF AG CAT GND VCC}) in the top row
+    of \emph{JB}. Versions 1--2 drove \texttt{AE/AF/AG/CAT} on JA's
+    \emph{bottom row} (pins \texttt{D13 B18 A18 K16}) --- pins the module
+    does not even touch. Segments E, F, G and the digit select were
+    floating: three of your seven wires went nowhere. That is exactly
+    ``part of a number.''
+  \item \textbf{The glyphs are mounted 180$^\circ$ rotated.} The decimal
+    points sit at the \emph{top-left} of each digit (normally
+    bottom-right) --- the giveaway that the LED package is upside down
+    relative to its labels. The lit segments confirmed it: the FPGA was
+    driving signals \texttt{AA}, \texttt{AC}, \texttt{AD} high, and the
+    photo showed \emph{bottom}, \emph{upper-left}, \emph{top} lit ---
+    each one diametrically opposite its textbook position. Uncorrected,
+    every digit would render upside down (a 6 would read as a 9).
+\end{enumerate}
+
+A useful detail: the three segments that \emph{did} light were a
+perfectly correct half of a ``6.'' That proved the logic and the
+Version-2 permutation were right as far as JA reached, and isolated the
+fault to the unwired JB half plus the rotation.
+
+\subsection{Version 3 (current): why it works}
+
+The final XDC applies two corrections on top of Version 2:
+
+\begin{itemize}
+  \item \textbf{JA/JB split:} \texttt{AE}$\to$\texttt{E15} (JB1),
+    \texttt{AF}$\to$\texttt{E16} (JB2), \texttt{AG}$\to$\texttt{D15}
+    (JB3), \texttt{CAT}$\to$\texttt{C15} (JB4). Now all eight module
+    inputs are actually driven.
+  \item \textbf{180$^\circ$ rotation:} swap each signal with its opposite
+    (\texttt{AA}$\leftrightarrow$\texttt{AD},
+    \texttt{AB}$\leftrightarrow$\texttt{AE},
+    \texttt{AC}$\leftrightarrow$\texttt{AF}; \texttt{AG} is the middle
+    bar and maps to itself). So ``viewed top'' is driven via \texttt{AD},
+    ``viewed bottom'' via \texttt{AA}, etc.
+\end{itemize}
+
+Sanity check with input \texttt{1011} ($2\times3=6$): \texttt{top.v}
+outputs \texttt{seg = 1101111}, i.e.\ every segment on except
+\texttt{seg[4]} (upper-right) --- which is precisely the shape of a 6,
+now rendered complete and upright.
+
+%=====================================================================
+\section{Debug Notes / Timeline (July 16--17)}
+
+\begin{enumerate}
+  \item \textbf{Simulation} (Icarus Verilog): all 16 input combinations
+    produce \texttt{seg} patterns matching the case table --- consistent
+    with the 2-bit $\times$ 2-bit multiplier (results 0,1,2,3,4,6,9).
+    Logic verified; simulation cannot catch pin-mapping bugs.
+  \item \textbf{Build + flash, XDC v1}: clean build, but the display
+    showed scrambled shapes. Diagnosis: segment-numbering mismatch
+    (geometric vs.\ alphabetical). Fix: permute pins (v2).
+  \item \textbf{Build + flash, XDC v2}: still partial digits.
+    \texttt{1011} gave three segments of a six.
+  \item \textbf{Photo analysis} (\texttt{IMG\_8616}): revealed the
+    JA+JB straddle (three segments + digit select never wired) and the
+    180$^\circ$-rotated glyphs (decimal points top-left; each lit
+    segment opposite its signal name).
+  \item \textbf{Build + flash, XDC v3}: all seven segments and the digit
+    select now driven, rotation corrected. Awaiting visual confirmation;
+    if the wrong digit of the two is lit, flip \texttt{assign C = 1'b1}
+    to \texttt{1'b0} in \texttt{top.v} and rebuild.
+\end{enumerate}
+
+\textbf{Lessons for next time:}
+\begin{itemize}
+  \item Simulation checks logic; only hardware (or a datasheet) checks
+    pinout. They fail independently.
+  \item When a peripheral misbehaves, first ask ``is every wire actually
+    connected to something?'' Floating pins produce exactly the
+    ``partial'' symptom seen here.
+  \item Fix mapping problems in the XDC, not by rewriting a correct
+    truth table. The Verilog never changed after July 13.
+  \item A photo of a known input is a powerful debug tool: three lit
+    segments were enough to deduce both remaining bugs.
+\end{itemize}
+
+\end{document}

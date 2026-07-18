@@ -1,0 +1,114 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  frame=single,
+  breaklines=true,
+  columns=fullflexible
+}
+
+\title{FPGA Session Log --- \texttt{final\_8}: Hardware Bring-Up \& Debug\\
+\large Digilent Arty A7-35T \,\textperiodcentered\, Open-Source Toolchain}
+\author{Lucas Zhou}
+\date{July 16--17, 2026}
+
+\begin{document}
+\maketitle
+
+\section{Session Goal}
+Build, flash, and verify the finished \texttt{top.v} (2-bit $\times$ 2-bit
+multiplier shown on a Pmod SSD seven-segment display) against the 2021
+ECE~15A final, problem~8 --- and debug why the display showed wrong or
+partial digits on real hardware.
+
+\section{Simulation (passed, unchanged all session)}
+The Icarus Verilog sweep of all 16 input combinations matches the case
+table in \texttt{top.v} exactly: products 0--9 as expected
+($A\times B$ for $A,B \in \{0..3\}$). The logic was correct from the
+start; every bug below was a pin-mapping issue in \texttt{arty.xdc}.
+
+\begin{lstlisting}[language=bash]
+source tools/oss-cad-suite/environment
+iverilog -o tb_top.vvp tb_top.v top.v
+vvp tb_top.vvp        # 16/16 rows match the case table
+\end{lstlisting}
+
+\section{Debug Timeline}
+\begin{enumerate}
+  \item \textbf{Flash \#1 (XDC v1, seg[N] $\to$ AA..AG alphabetical):}
+    scrambled shapes (a ``7''-like glyph, fragments). Cause:
+    \texttt{top.v} numbers segments \emph{geometrically bottom-to-top}
+    (seg[0..6] = D,C,E,G,B,F,A), not alphabetically.
+  \item \textbf{Flash \#2 (XDC v2, permuted, still JA-only):} input
+    \texttt{1011} ($2\times3$) showed only \emph{part} of a 6.
+  \item \textbf{Photo analysis (\texttt{IMG\_8616}):} two findings ---
+    (a) the Pmod SSD straddles \emph{two} connectors: header J1
+    (AA--AD) in JA's top row, header J2 (AE, AF, AG, CAT) in
+    \emph{JB's} top row, so v1/v2 drove three segments + digit select
+    on untouched JA bottom-row pins (they floated); (b) the glyphs are
+    mounted 180$^\circ$ rotated (decimal points top-left), so each
+    signal lights the segment opposite its name.
+  \item \textbf{Flash \#3 (XDC v3, current):} AE/AF/AG/CAT moved to JB
+    pins E15/E16/D15/C15; all seven assignments rotated 180$^\circ$.
+    Digit select \texttt{C} now actually driven by
+    \texttt{assign C = 1'b1}.
+\end{enumerate}
+
+\section{Final Pin Map (XDC v3)}
+\begin{center}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Port & Meaning & SSD signal & Pin & Connector \\
+\midrule
+\texttt{A2/A1/B2/B1} & inputs & --- & A10/C10/C11/A8 & SW3/SW2/SW1/SW0 \\
+\texttt{seg[0]} & bottom       & AA & G13 & JA1 \\
+\texttt{seg[1]} & lower-right  & AF & E16 & JB2 \\
+\texttt{seg[2]} & lower-left   & AB & B11 & JA2 \\
+\texttt{seg[3]} & middle       & AG & D15 & JB3 \\
+\texttt{seg[4]} & upper-right  & AE & E15 & JB1 \\
+\texttt{seg[5]} & upper-left   & AC & A11 & JA3 \\
+\texttt{seg[6]} & top          & AD & D12 & JA4 \\
+\texttt{C} & digit select      & CAT & C15 & JB4 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Open Items}
+\begin{itemize}
+  \item \textbf{Visual confirmation} of XDC v3 on hardware (expect a
+    complete upright 6 for input \texttt{1011}; spot-check 9, 4, 1, 0).
+  \item If the \emph{other} digit of the two should light: flip
+    \texttt{assign C = 1'b1} to \texttt{1'b0} in \texttt{top.v},
+    rebuild.
+  \item Current load is \textbf{SRAM only} (lost on power-off). For the
+    final demo, write to flash:
+    \texttt{openFPGALoader -b arty -f top.bit}.
+\end{itemize}
+
+\section{Files in \texttt{projects/final\_8/}}
+\begin{tabular}{@{}lll@{}}
+\toprule
+File & Status & Notes \\
+\midrule
+\texttt{top.v} & unchanged, correct & author's multiplier + case table \\
+\texttt{arty.xdc} & rewritten twice (v3) & JA/JB split + 180$^\circ$ rotation \\
+\texttt{xdc-explained.pdf} & new this session & line-by-line XDC tutorial + full debug story \\
+\texttt{session-log-2026-07-13.pdf} & prior session & syntax fixes, testbench, sim flow \\
+\texttt{top.bit} & flashed to SRAM & 3 builds, all 0 errors \\
+\bottomrule
+\end{tabular}
+
+\vspace{1em}
+\noindent For the beginner-level, line-by-line explanation of the XDC
+syntax and all three versions, see \texttt{xdc-explained.pdf}.
+
+\end{document}

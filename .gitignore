@@ -43,3 +43,5 @@ projects/*/*.fasm
 projects/*/*.frames
 projects/*/*.bit
 projects/*/*.bin
+projects/*/*.vvp
+projects/*/*.vcd
